@@ -19,10 +19,14 @@ int main(int argc, char **argv){
   int n = 0;
   char buf[BUFSIZE];
   int cb = 0;
+  int noexit = 1;
+  fd_set  ready;        /* used for select */
+  int i = 0;        /* used in the multiplex loop */
+
   // find the nano control board
   // use the argv if available or else we have to search for it.
   // make connection to control board
-  cb = open(argv[1], O_RDWR, O_NCTTY);
+  cb = open(argv[1], O_RDWR | O_NOCTTY | O_NDELAY );
   if(cb < 0){
     printf("Unable to open device\n");
     exit(1);
@@ -30,66 +34,45 @@ int main(int argc, char **argv){
   // set port to no delay, return immediately if there is no data
   fcntl(cb, F_SETFL, FNDELAY);
   
-  //{
-  // accept control codes
-
-  
   // send info to control
   n = 0;
-  n = write(cb,":\n",64); // Activate mini-board
+  n = write(cb,":",4); // Activate mini-board
   if ( n<0 ){
-    //printf("write() to device failed.\n");
+    printf("write() to device failed.\n");
   }
-  while(1){
+  while(noexit){ // main loop : loop until exit command from control node or user
     // read and replies
-    n = 0;
-    n = read(cb,&buf,1023);
-    if (n>0){
-      printf("BUF{%s}\n",buf);
-    }else{
-      //printf("nothing read\n");
-    }
-  /* need some of the stuff to check for input available 
-     some from the controller and also some from the user input
-  */
-  int pf; 
-  fd_set  ready;        /* used for select */
-  int i = 0;        /* used in the multiplex loop */
-  int done = 0;
-  struct timeval tv;
-  tv.tv_usec = 0;
+//    n = 0;
+//    n = read(cb,&buf,1023);
+//    if (n>0){
+//      printf("BUF{%s}\n",buf);
+//    }else{
+//      //printf("nothing read\n");
+//    }
+      FD_ZERO(&ready);
+      FD_SET(STDIN_FILENO, &ready);
+      FD_SET(cb, &ready);
 
-    do { /* loop forever */
-        FD_ZERO(&ready);
-        FD_SET(STDIN_FILENO, &ready);
-        FD_SET(pf, &ready);
+      select(cb+1, &ready, NULL, NULL, NULL);
 
-        select(pf+1, &ready, NULL, NULL, NULL);
+      if (FD_ISSET(cb, &ready)) {
+        /* pf has characters for us */
+        i = read(cb, buf, BUFSIZE);
+        if (i > 0) {
+          write(STDOUT_FILENO, buf, i);
+        }
+      } 
 
-        if (FD_ISSET(pf, &ready)) {
-            /* pf has characters for us */
-            i = read(pf, buf, BUFSIZE);
-
-            if (i > 0) {
-                write(STDOUT_FILENO, buf, i);
-            }
-           else {
-                done = 1;
-            }
-        } /* if */
-
-        if (FD_ISSET(STDIN_FILENO, &ready)) {
-                /* standard input has characters for us */
-                i = read(STDIN_FILENO, buf, BUFSIZE);
-            if (i > 0) {
-                cook_buf(pf, buf, i);
-            }
-            else {
-                done = 1;
-            }
-        } /* if */
-    }  while (!done); /* do */
-    } else {  
+      if (FD_ISSET(STDIN_FILENO, &ready)) {
+        /* standard input has characters for us */
+        i = read(STDIN_FILENO, buf, BUFSIZE);
+        if (i > 0) {
+          write(cb, buf, i);
+        }
+      } 
+      if( noexit == 0 ){  // unending loop for now //command for exit is true){
+      noexit = 0;
+    }  
   }  
   // shutdown program
 
