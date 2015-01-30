@@ -33,14 +33,14 @@ int main(int argc, char **argv){
   //{
   // accept control codes
 
+  
+  // send info to control
+  n = 0;
+  n = write(cb,":\n",64); // Activate mini-board
+  if ( n<0 ){
+    //printf("write() to device failed.\n");
+  }
   while(1){
-    // send info to control
-    n = 0;
-    n = write(cb,": a\n",64);
-    if ( n<0 ){
-      //printf("write() to device failed.\n");
-    }
-
     // read and replies
     n = 0;
     n = read(cb,&buf,1023);
@@ -49,21 +49,13 @@ int main(int argc, char **argv){
     }else{
       //printf("nothing read\n");
     }
-
-    // confirm action
-    //
-    //#include "nanocom.h"
-
-extern char scr_name[];
-
-
-
-/* main program loop */
+  /* need some of the stuff to check for input available 
+     some from the controller and also some from the user input
+  */
   int pf; 
   fd_set  ready;        /* used for select */
   int i = 0;        /* used in the multiplex loop */
   int done = 0;
-  char buf[BUFSIZE];
   struct timeval tv;
   tv.tv_usec = 0;
 
@@ -97,13 +89,7 @@ extern char scr_name[];
             }
         } /* if */
     }  while (!done); /* do */
-}
-
-
-
-
-                                                               73,1   Command
-            else {  
+    } else {  
   }  
   // shutdown program
 
