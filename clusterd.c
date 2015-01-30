@@ -20,9 +20,9 @@ int main(int argc, char **argv){
   char buf[BUFSIZE];
   int cb = 0;
   // find the nano control board
-
+  // use the argv if available or else we have to search for it.
   // make connection to control board
-  cb = open(argv[1], O_RDWR);
+  cb = open(argv[1], O_RDWR, O_NCTTY);
   if(cb < 0){
     printf("Unable to open device\n");
     exit(1);
